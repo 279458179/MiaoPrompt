@@ -1,0 +1,5 @@
+{
+  "name": "MiaoPrompt - 灵感画笔",
+  "description": "一款可爱美观的AI绘画提示词生成器，将您的中文创意转化为高质量的英文Prompt，适配Midjourney、Stable Diffusion等主流模型。",
+  "requestFramePermissions": []
+}
