@@ -9,10 +9,44 @@ export const ResultCard: React.FC<ResultCardProps> = ({ data }) => {
   const [copiedEn, setCopiedEn] = useState(false);
   const [copiedNeg, setCopiedNeg] = useState(false);
 
-  const copyToClipboard = (text: string, setCopied: (v: boolean) => void) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async (text: string, setCopied: (v: boolean) => void) => {
+    if (!text) return;
+
+    try {
+      // 尝试使用现代 Clipboard API
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.warn('Clipboard API failed, trying fallback...', err);
+      
+      // 兼容方案：创建一个临时文本域来执行复制
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        
+        // 确保它不可见但存在于 DOM 中
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        document.body.appendChild(textArea);
+        
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } else {
+          console.error('Fallback copy failed.');
+        }
+      } catch (fallbackErr) {
+        console.error('Unable to copy', fallbackErr);
+      }
+    }
   };
 
   return (
@@ -45,7 +79,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ data }) => {
             title="复制"
           >
             {copiedEn ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             ) : (
