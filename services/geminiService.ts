@@ -15,7 +15,7 @@ const promptSchema: Schema = {
   properties: {
     englishPrompt: {
       type: Type.STRING,
-      description: "The highly detailed, optimized English prompt for text-to-image AI. Includes subject, medium, style, lighting, color palette, and quality boosters (e.g., 'masterpiece, best quality, 8k').",
+      description: "The highly detailed, optimized English prompt. MUST start with '[用户图1]'. Includes subject, medium, style, lighting, color palette, and quality boosters.",
     },
     chineseTranslation: {
       type: Type.STRING,
@@ -57,16 +57,17 @@ export const generateAiPrompt = async (
   }
 
   const systemInstruction = `
-    You are an expert AI Art Prompt Engineer (specializing in Midjourney, Stable Diffusion, and Flux).
+    You are an expert AI Art Prompt Engineer (specializing in image-to-image workflows).
     Your goal is to take a user's input (usually in Chinese) and convert it into a TOP-TIER English prompt.
     
     Guidelines:
-    1.  **Analyze**: Understand the core subject, action, and mood of the user's input.
-    2.  **Enhance**: Add necessary details for lighting, composition, and texture that the user might have missed.
-    3.  **Format**: Produce a comma-separated list of keywords and phrases.
-    4.  **Style**: Strictly adhere to the requested style: ${styleInstruction}.
-    5.  **Output**: Return the result in valid JSON format matching the schema.
-    6.  **Language**: The input is Chinese. The 'englishPrompt' MUST be English. The 'chineseTranslation' MUST be Chinese.
+    1.  **Prefix Requirement**: The 'englishPrompt' MUST start with the exact text "[用户图1]". This is mandatory for the specific AI tool the user is using.
+    2.  **Analyze**: Understand the core subject, action, and mood of the user's input.
+    3.  **Enhance**: Add necessary details for lighting, composition, and texture that the user might have missed.
+    4.  **Format**: Produce a comma-separated list of keywords and phrases following the prefix.
+    5.  **Style**: Strictly adhere to the requested style: ${styleInstruction}.
+    6.  **Output**: Return the result in valid JSON format matching the schema.
+    7.  **Language**: The input is Chinese. The prompt content (after the prefix) MUST be English. The 'chineseTranslation' MUST be Chinese.
   `;
 
   const userContent = `User Idea: ${userInput}\nDesired Aspect Ratio: ${aspectRatio}`;
@@ -90,6 +91,13 @@ export const generateAiPrompt = async (
     }
 
     const result = JSON.parse(jsonText) as PromptResponse;
+    
+    // Safety enforcement of the prefix
+    if (!result.englishPrompt.startsWith('[用户图1]')) {
+       // Prepend if missing. We assume the model generates a clean string, so we just attach it.
+       result.englishPrompt = `[用户图1]${result.englishPrompt}`;
+    }
+
     return result;
 
   } catch (error) {
