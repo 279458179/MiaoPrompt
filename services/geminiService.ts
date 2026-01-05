@@ -1,7 +1,14 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { PromptResponse } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let ai: GoogleGenAI | null = null;
+
+const getAiClient = () => {
+  if (!ai) {
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  }
+  return ai;
+};
 
 const promptSchema: Schema = {
   type: Type.OBJECT,
@@ -65,7 +72,8 @@ export const generateAiPrompt = async (
   const userContent = `User Idea: ${userInput}\nDesired Aspect Ratio: ${aspectRatio}`;
 
   try {
-    const response = await ai.models.generateContent({
+    const client = getAiClient();
+    const response = await client.models.generateContent({
       model: model,
       contents: userContent,
       config: {
