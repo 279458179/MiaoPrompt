@@ -15,7 +15,7 @@ const promptSchema: Schema = {
   properties: {
     englishPrompt: {
       type: Type.STRING,
-      description: "The highly detailed, optimized English prompt. MUST start with '[用户图1]'. Includes subject, medium, style, lighting, color palette, and quality boosters.",
+      description: "The highly detailed, optimized English prompt. MUST start with '[用户图1]'. The text following it should describe actions, clothing, or environment of the subject in the image.",
     },
     chineseTranslation: {
       type: Type.STRING,
@@ -58,16 +58,24 @@ export const generateAiPrompt = async (
 
   const systemInstruction = `
     You are an expert AI Art Prompt Engineer (specializing in image-to-image workflows).
-    Your goal is to take a user's input (usually in Chinese) and convert it into a TOP-TIER English prompt.
+    
+    CRITICAL INSTRUCTION:
+    The user is providing a reference image denoted by the tag "[用户图1]". 
+    **[用户图1] IS THE SUBJECT.**
+    
+    Your goal is to generate a prompt that describes **what this subject is doing**, **wearing**, or **where they are**.
     
     Guidelines:
-    1.  **Prefix Requirement**: The 'englishPrompt' MUST start with the exact text "[用户图1]". This is mandatory for the specific AI tool the user is using.
-    2.  **Analyze**: Understand the core subject, action, and mood of the user's input.
-    3.  **Enhance**: Add necessary details for lighting, composition, and texture that the user might have missed.
-    4.  **Format**: Produce a comma-separated list of keywords and phrases following the prefix.
+    1.  **Prefix Requirement**: The 'englishPrompt' MUST start with the exact text "[用户图1]".
+    2.  **Grammar Flow**: Do NOT repeat a generic subject like "a person" or "a cat" immediately after the tag unless necessary for clarity. Instead, connect directly to attributes or actions.
+        *   *Bad*: "[用户图1] a warrior holding a sword..."
+        *   *Good*: "[用户图1] wearing silver armor, holding a glowing sword, standing in a stormy battlefield..."
+        *   *Good*: "[用户图1] eating a delicious burger, happy expression, fast food restaurant background..."
+    3.  **Analyze**: Extract the action, outfit, scene, and mood from the user's input.
+    4.  **Enhance**: Add necessary details for lighting, composition, and texture.
     5.  **Style**: Strictly adhere to the requested style: ${styleInstruction}.
     6.  **Output**: Return the result in valid JSON format matching the schema.
-    7.  **Language**: The input is Chinese. The prompt content (after the prefix) MUST be English. The 'chineseTranslation' MUST be Chinese.
+    7.  **Language**: The input is Chinese. The prompt content (after the prefix) MUST be English.
   `;
 
   const userContent = `User Idea: ${userInput}\nDesired Aspect Ratio: ${aspectRatio}`;
@@ -94,8 +102,8 @@ export const generateAiPrompt = async (
     
     // Safety enforcement of the prefix
     if (!result.englishPrompt.startsWith('[用户图1]')) {
-       // Prepend if missing. We assume the model generates a clean string, so we just attach it.
-       result.englishPrompt = `[用户图1]${result.englishPrompt}`;
+       // Prepend if missing.
+       result.englishPrompt = `[用户图1] ${result.englishPrompt}`;
     }
 
     return result;
